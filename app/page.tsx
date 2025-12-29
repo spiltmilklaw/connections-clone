@@ -175,7 +175,7 @@ export default function Home() {
       <div className="flex flex-col items-center w-11/12 md:w-3/4 lg:w-7/12 mx-auto mt-14">
         <div className="w-full flex flex-col md:flex-row md:items-end md:justify-between gap-3">
           <div>
-            <h1 className="text-black text-4xl font-semibold my-2 ml-4">Connections</h1>
+            <h1 className="text-black text-4xl font-semibold my-2 ml-4">🥝-connect</h1>
             <div className="text-black ml-4 text-sm opacity-80">
               Puzzle date: <span className="font-medium">{selectedDate || "…"}</span>
               {todayNz ? (
