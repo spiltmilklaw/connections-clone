@@ -122,14 +122,14 @@ export async function GET(req: NextRequest) {
     const iW4 = idx("word4");
 
     const missingCols = [
-      ["date", iDate],
-      ["level", iLevel],
-      ["category", iCategory],
-      ["word1", iW1],
-      ["word2", iW2],
-      ["word3", iW3],
-      ["word4", iW4],
-    ].filter(([, index]) => index < 0);
+  ["date", iDate],
+  ["level", iLevel],
+  ["category", iCategory],
+  ["word1", iW1],
+  ["word2", iW2],
+  ["word3", iW3],
+  ["word4", iW4],
+].filter(([, index]) => typeof index !== "number" || index < 0);
 
     if (missingCols.length) {
       return NextResponse.json(
