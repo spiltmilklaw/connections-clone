@@ -1,40 +1,48 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { categories } from "../_examples";
 import { Category, SubmitResult, Word } from "../_types";
 import { delay, shuffleArray } from "../_utils";
 
-export default function useGameLogic() {
+export default function useGameLogic(puzzleCategories: Category[] | null) {
   const [gameWords, setGameWords] = useState<Word[]>([]);
   const selectedWords = useMemo(
     () => gameWords.filter((item) => item.selected),
     [gameWords]
   );
+
   const [clearedCategories, setClearedCategories] = useState<Category[]>([]);
   const [isWon, setIsWon] = useState(false);
   const [isLost, setIsLost] = useState(false);
   const [mistakesRemaining, setMistakesRemaning] = useState(4);
   const guessHistoryRef = useRef<Word[][]>([]);
 
+  // When puzzle changes, reset the whole game state
   useEffect(() => {
-    const words: Word[] = categories
+    if (!puzzleCategories || puzzleCategories.length === 0) return;
+
+    guessHistoryRef.current = [];
+    setClearedCategories([]);
+    setIsWon(false);
+    setIsLost(false);
+    setMistakesRemaning(4);
+
+    const words: Word[] = puzzleCategories
       .map((category) =>
         category.items.map((word) => ({ word: word, level: category.level }))
       )
       .flat();
+
     setGameWords(shuffleArray(words));
-  }, []);
+  }, [puzzleCategories]);
 
   const selectWord = (word: Word): void => {
     const newGameWords = gameWords.map((item) => {
-      // Only allow word to be selected if there are less than 4 selected words
       if (word.word === item.word) {
         return {
           ...item,
           selected: selectedWords.length < 4 ? !item.selected : false,
         };
-      } else {
-        return item;
       }
+      return item;
     });
 
     setGameWords(newGameWords);
@@ -45,26 +53,21 @@ export default function useGameLogic() {
   };
 
   const deselectAllWords = () => {
-    setGameWords(
-      gameWords.map((item) => {
-        return { ...item, selected: false };
-      })
-    );
+    setGameWords(gameWords.map((item) => ({ ...item, selected: false })));
   };
 
   const getSubmitResult = (): SubmitResult => {
+    if (!puzzleCategories) return { result: "incorrect" };
+
     const sameGuess = guessHistoryRef.current.some((guess) =>
       guess.every((word) => selectedWords.includes(word))
     );
 
-    if (sameGuess) {
-      console.log("Same!");
-      return { result: "same" };
-    }
+    if (sameGuess) return { result: "same" };
 
     guessHistoryRef.current.push(selectedWords);
 
-    const likenessCounts = categories.map((category) => {
+    const likenessCounts = puzzleCategories.map((category) => {
       return selectedWords.filter((item) => category.items.includes(item.word))
         .length;
     });
@@ -73,7 +76,7 @@ export default function useGameLogic() {
     const maxIndex = likenessCounts.indexOf(maxLikeness);
 
     if (maxLikeness === 4) {
-      return getCorrectResult(categories[maxIndex]);
+      return getCorrectResult(puzzleCategories[maxIndex]);
     } else {
       return getIncorrectResult(maxLikeness);
     }
@@ -81,9 +84,7 @@ export default function useGameLogic() {
 
   const getCorrectResult = (category: Category): SubmitResult => {
     setClearedCategories([...clearedCategories, category]);
-    setGameWords(
-      gameWords.filter((item) => !category.items.includes(item.word))
-    );
+    setGameWords(gameWords.filter((item) => !category.items.includes(item.word)));
 
     if (clearedCategories.length === 3) {
       return { result: "win" };
@@ -105,7 +106,9 @@ export default function useGameLogic() {
   };
 
   const handleLoss = async () => {
-    const remainingCategories = categories.filter(
+    if (!puzzleCategories) return;
+
+    const remainingCategories = puzzleCategories.filter(
       (category) => !clearedCategories.includes(category)
     );
 
@@ -113,12 +116,9 @@ export default function useGameLogic() {
 
     for (const category of remainingCategories) {
       await delay(1000);
-      setClearedCategories((prevClearedCategories) => [
-        ...prevClearedCategories,
-        category,
-      ]);
-      setGameWords((prevGameWords) =>
-        prevGameWords.filter((item) => !category.items.includes(item.word))
+      setClearedCategories((prev) => [...prev, category]);
+      setGameWords((prev) =>
+        prev.filter((item) => !category.items.includes(item.word))
       );
     }
 
